@@ -357,13 +357,11 @@ function App() {
                       value={form.regionId}
                       onChange={onFieldChange('regionId')}
                       icon="location-outline"
-                      options={[
-                        { value: '', label: 'Default / Base pricing' },
-                        ...regions.map((item) => ({
-                          value: item.id,
-                          label: item.name,
-                        })),
-                      ]}
+                      placeholder="Choose region"
+                      options={regions.map((item) => ({
+                        value: item.id,
+                        label: item.name,
+                      }))}
                     />
                     <div>
                       <SelectField
@@ -765,6 +763,7 @@ function SelectField({
   onChange,
   options,
   icon,
+  placeholder,
 }) {
   return (
     <div className="field-group">
@@ -775,6 +774,11 @@ function SelectField({
       <div className="input-shell select-shell">
         {icon ? <ion-icon name={icon} /> : null}
         <select value={value} onChange={onChange}>
+          {placeholder ? (
+            <option value="" disabled hidden>
+              {placeholder}
+            </option>
+          ) : null}
           {options.map((option) => (
             <option key={`${option.value}-${option.label}`} value={option.value}>
               {option.label}
