@@ -15,6 +15,8 @@ const initialForm = {
   selectedDates: [],
 };
 
+const EXTRA_DATE_AMOUNT = 3000;
+
 function App() {
   const [packages, setPackages] = useState([]);
   const [regions, setRegions] = useState([]);
@@ -117,16 +119,28 @@ function App() {
       .filter(Boolean);
   }, [cartItems, form.regionId, form.selectedDates, packages]);
 
-  const totalAmount = useMemo(() => {
+  const basePackageAmount = useMemo(() => {
+    return bookingItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  }, [bookingItems]);
+
+  const extraDateCharge = useMemo(() => {
     return (
-      bookingItems.reduce((sum, item) => sum + item.totalPrice, 0) +
-      Math.max(0, form.selectedDates.length - 1) * 3000
+      Math.max(0, form.selectedDates.length - 1) *
+      EXTRA_DATE_AMOUNT *
+      Math.max(1, totalPackageCount)
     );
-  }, [bookingItems, form.selectedDates.length]);
+  }, [form.selectedDates.length, totalPackageCount]);
+
+  const totalAmount = useMemo(() => {
+    return basePackageAmount + extraDateCharge;
+  }, [basePackageAmount, extraDateCharge]);
 
   const advanceAmount = useMemo(() => {
-    return bookingItems.reduce((sum, item) => sum + item.advanceAmount, 0);
-  }, [bookingItems]);
+    return (
+      bookingItems.reduce((sum, item) => sum + item.advanceAmount, 0) *
+      Math.max(1, form.selectedDates.length)
+    );
+  }, [bookingItems, form.selectedDates.length]);
 
   const additionalPackageAdvance = useMemo(() => {
     return Math.max(0, totalPackageCount - 1) * 3000;
@@ -606,22 +620,14 @@ function App() {
                               : 'Not selected'}
                           </strong>
                         </div>
-                        {totalPackageCount > 1 ? (
-                          <div className="summary-row">
-                            <span>Extra Package Advance</span>
-                            <strong>
-                              ₹{formatCurrency(Math.max(0, totalPackageCount - 1) * 3000)}
-                            </strong>
-                          </div>
-                        ) : null}
-                        <div className="summary-divider" />
+
                         <div className="advance-summary">
                           <div>
                             <div className="advance-title">
                               Advance to Confirm
                             </div>
                             <div className="advance-note">
-                              Each added package contributes its own advance.
+                              Advance is charged per package for each selected date.
                             </div>
                           </div>
                           <div className="advance-amount">
@@ -634,7 +640,7 @@ function App() {
                                 totalPackageCount === 1 ? '' : 's'
                               } across ${form.selectedDates.length} selected date${
                                 form.selectedDates.length === 1 ? '' : 's'
-                              } will be reviewed by admin. This booking needs ₹${formatCurrency(advanceAmount)} in advance to confirm.`
+                              }. This booking needs ₹${formatCurrency(advanceAmount)} in advance to confirm.`
                             : 'Choose your dates and add packages to see the confirmation advance.'}
                         </div>
                       </div>
