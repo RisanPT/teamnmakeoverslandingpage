@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import nizanLogo from './assets/nizan_logo.png';
+import teamNLogo from './assets/teamnlogo.png';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ??
@@ -138,7 +138,7 @@ function App() {
   const advanceAmount = useMemo(() => {
     return (
       bookingItems.reduce((sum, item) => sum + item.advanceAmount, 0) *
-      Math.max(1, form.selectedDates.length)
+      form.selectedDates.length
     );
   }, [bookingItems, form.selectedDates.length]);
 
@@ -202,9 +202,7 @@ function App() {
     setActiveTooltip(null);
     setForm((prev) => ({
       ...prev,
-      selectedDates: prev.selectedDates.includes(day.value)
-        ? prev.selectedDates.filter((value) => value !== day.value)
-        : [...prev.selectedDates, day.value].sort(),
+      selectedDates: prev.selectedDates.includes(day.value) ? [] : [day.value],
     }));
   };
 
@@ -286,9 +284,9 @@ function App() {
       <header className="page-header">
         <div className="brand">
           <div className="brand-icon">
-            <img src={nizanLogo} alt="Nizan Makeovers logo" />
+            <img src={teamNLogo} alt="Team N Makeovers logo" />
           </div>
-          <span className="brand-text">Nizan Makeovers</span>
+          <span className="brand-text">Team N Makeovers</span>
         </div>
       </header>
 
@@ -482,7 +480,7 @@ function App() {
                 >
                   <div className="calendar-layout">
                     <div>
-                      <label className="field-label">Event Dates</label>
+                      <label className="field-label">Event Date</label>
                       <div className="calendar-card">
                         <div className="calendar-head">
                           <div className="calendar-month">
@@ -584,7 +582,7 @@ function App() {
                           ))
                         ) : (
                           <span className="selected-date-pill muted">
-                            No dates selected yet
+                            No date selected yet
                           </span>
                         )}
                       </div>
@@ -595,8 +593,8 @@ function App() {
                         <label className="field-label">Booking Status</label>
                         <div className="time-empty static-card">
                           {form.selectedDates.length > 0
-                            ? 'Your selected dates will be sent to our sales team. Exact timing will be confirmed by admin.'
-                            : 'Select your preferred dates. Timing will be coordinated by the admin team later.'}
+                            ? 'Your selected date will be sent to our sales team. Exact timing will be confirmed by admin.'
+                            : 'Select your preferred date. Timing will be coordinated by the admin team later.'}
                         </div>
                       </div>
 
@@ -605,7 +603,6 @@ function App() {
                           <span>Session Duration</span>
                           <strong>
                             {form.selectedDates.length || 0} Day
-                            {form.selectedDates.length === 1 ? '' : 's'}
                           </strong>
                         </div>
                         <div className="summary-row">
@@ -613,10 +610,10 @@ function App() {
                           <strong>{totalPackageCount}</strong>
                         </div>
                         <div className="summary-row">
-                          <span>Preferred Dates</span>
+                          <span>Preferred Date</span>
                           <strong>
                             {form.selectedDates.length > 0
-                              ? `${form.selectedDates.length} selected`
+                              ? 'Selected'
                               : 'Not selected'}
                           </strong>
                         </div>
@@ -638,10 +635,8 @@ function App() {
                           {form.selectedDates.length > 0 && bookingItems.length > 0
                             ? `${totalPackageCount} package${
                                 totalPackageCount === 1 ? '' : 's'
-                              } across ${form.selectedDates.length} selected date${
-                                form.selectedDates.length === 1 ? '' : 's'
-                              }. This booking needs ₹${formatCurrency(advanceAmount)} in advance to confirm.`
-                            : 'Choose your dates and add packages to see the confirmation advance.'}
+                              } for the selected date. This booking needs ₹${formatCurrency(advanceAmount)} in advance to confirm.`
+                            : 'Choose your date and add packages to see the confirmation advance.'}
                         </div>
                       </div>
                     </div>
@@ -694,7 +689,7 @@ function ConfirmationCard({ onBookAnother }) {
     <div className="confirmation-shell">
       <div className="confirmation-brand">
         <ion-icon name="sparkles-outline" />
-        Nizan Makeovers
+        Team N Makeovers
       </div>
 
       <div className="confirmation-card">
