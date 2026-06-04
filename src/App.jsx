@@ -9,6 +9,7 @@ const initialForm = {
   customerName: '',
   phone: '',
   email: '',
+  districtId: '',
   regionId: '',
   packageId: '',
   eventSlot: '',
@@ -19,7 +20,7 @@ const EXTRA_DATE_AMOUNT = 3000;
 
 function App() {
   const [packages, setPackages] = useState([]);
-  const [regions, setRegions] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [blockedDates, setBlockedDates] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -43,10 +44,10 @@ function App() {
         setLoading(true);
         setError('');
 
-        const [packagesData, regionsData, bookingsData, blockedDatesData] =
+        const [packagesData, districtsData, bookingsData, blockedDatesData] =
           await Promise.all([
           fetchJson('/packages'),
-          fetchJson('/regions?active=true'),
+          fetchJson('/districts?active=true'),
           fetchJson('/bookings/public'),
           fetchJson('/blocked-dates?active=true'),
         ]);
@@ -54,12 +55,12 @@ function App() {
         if (!mounted) return;
 
         const normalizedPackages = dedupeById(packagesData, normalizePackage);
-        const normalizedRegions = dedupeById(regionsData, normalizeRegion);
+        const normalizedDistricts = dedupeById(districtsData, normalizeDistrict);
         const normalizedBookings = bookingsData.map(normalizeBooking);
         const normalizedBlockedDates = blockedDatesData.map(normalizeBlockedDate);
 
         setPackages(normalizedPackages);
-        setRegions(normalizedRegions);
+        setDistricts(normalizedDistricts);
         setBookings(normalizedBookings);
         setBlockedDates(normalizedBlockedDates);
         setForm((prev) => ({
@@ -88,9 +89,9 @@ function App() {
     [packages, form.packageId],
   );
 
-  const selectedRegion = useMemo(
-    () => regions.find((item) => item.id === form.regionId) ?? null,
-    [regions, form.regionId],
+  const selectedDistrict = useMemo(
+    () => districts.find((item) => item.id === form.districtId) ?? null,
+    [districts, form.districtId],
   );
 
   const bookingItems = useMemo(() => {
@@ -101,11 +102,29 @@ function App() {
         const packageDoc = packages.find((pkg) => pkg.id === item.packageId);
         if (!packageDoc) return [];
 
-        const basePrice = !form.regionId
-          ? packageDoc.price
-          : (packageDoc.regionPrices.find(
-              (regionPrice) => regionPrice.regionId === form.regionId,
-            )?.price ?? packageDoc.price);
+        let basePrice = packageDoc.price;
+        if (form.districtId) {
+          const distPrice = packageDoc.districtPrices?.find(
+            (dp) => dp.districtId === form.districtId
+          );
+          if (distPrice) {
+            basePrice = distPrice.price;
+          } else if (form.regionId) {
+            const regPrice = packageDoc.regionPrices?.find(
+              (rp) => rp.regionId === form.regionId
+            );
+            if (regPrice) {
+              basePrice = regPrice.price;
+            }
+          }
+        } else if (form.regionId) {
+          const regPrice = packageDoc.regionPrices?.find(
+            (rp) => rp.regionId === form.regionId
+          );
+          if (regPrice) {
+            basePrice = regPrice.price;
+          }
+        }
 
         return Array.from({ length: item.quantity }, () => ({
           packageId: packageDoc.id,
@@ -117,7 +136,7 @@ function App() {
         }));
       })
       .filter(Boolean);
-  }, [cartItems, form.regionId, form.selectedDates, packages]);
+  }, [cartItems, form.districtId, form.regionId, form.selectedDates, packages]);
 
   const basePackageAmount = useMemo(() => {
     return bookingItems.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -153,10 +172,24 @@ function App() {
 
   const onFieldChange = (field) => (event) => {
     const value = event.target.value;
+    if (field === 'districtId') {
+      const dist = districts.find((d) => d.id === value);
+      const regionObj = dist?.region;
+      const regionId = (typeof regionObj === 'object' && regionObj !== null)
+        ? (regionObj._id ?? regionObj.id ?? '')
+        : (regionObj ?? '');
+
+      setForm((prev) => ({
+        ...prev,
+        districtId: value,
+        regionId: regionId,
+      }));
+    } else {
       setForm((prev) => ({
         ...prev,
         [field]: value,
-    }));
+      }));
+    }
     setShowConfirmation(false);
   };
 
@@ -236,13 +269,17 @@ function App() {
       phone: form.phone.trim(),
       email: form.email.trim(),
       packageId: bookingItems[0].packageId,
-      regionId: selectedRegion?.id ?? '',
+      regionId: form.regionId ?? '',
+      districtId: selectedDistrict?.id ?? '',
       service: bookingItems.map((item) => item.service).join(' + '),
       eventSlot: bookingItems
         .map((item) => item.eventSlot.trim())
         .filter(Boolean)
         .join(' | '),
-      region: selectedRegion?.name ?? '',
+      region: (typeof selectedDistrict?.region === 'object' && selectedDistrict?.region !== null)
+        ? (selectedDistrict.region.name ?? '')
+        : '',
+      district: selectedDistrict?.name ?? '',
       selectedDates: sortedSelectedDates,
       bookingItems,
       status: 'pending',
@@ -343,6 +380,7 @@ function App() {
                     <Field
                       label="Phone Number"
                       required
+                      type="tel"
                       value={form.phone}
                       onChange={onFieldChange('phone')}
                       placeholder="+91 98765 43210"
@@ -351,6 +389,7 @@ function App() {
                     <Field
                       label="Email Address"
                       required
+                      type="email"
                       value={form.email}
                       onChange={onFieldChange('email')}
                       placeholder="alexandra@example.com"
@@ -366,11 +405,12 @@ function App() {
                   <div className="field-grid">
                     <SelectField
                       label="Select Event Location"
-                      value={form.regionId}
-                      onChange={onFieldChange('regionId')}
+                      required
+                      value={form.districtId}
+                      onChange={onFieldChange('districtId')}
                       icon="location-outline"
-                      placeholder="Choose region"
-                      options={regions.map((item) => ({
+                      placeholder="Choose district"
+                      options={districts.map((item) => ({
                         value: item.id,
                         label: item.name,
                       }))}
@@ -737,6 +777,7 @@ function Field({
   placeholder,
   icon,
   className = '',
+  type = 'text',
 }) {
   return (
     <div className={['field-group', className].filter(Boolean).join(' ')}>
@@ -747,6 +788,7 @@ function Field({
       <div className="input-shell">
         {icon ? <ion-icon name={icon} /> : null}
         <input
+          type={type}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
@@ -774,7 +816,7 @@ function SelectField({
       </label>
       <div className="input-shell select-shell">
         {icon ? <ion-icon name={icon} /> : null}
-        <select value={value} onChange={onChange}>
+        <select value={value} onChange={onChange} required={required}>
           {placeholder ? (
             <option value="" disabled hidden>
               {placeholder}
@@ -838,6 +880,10 @@ function normalizeRegion(item) {
   return normalizeEntity(item);
 }
 
+function normalizeDistrict(item) {
+  return normalizeEntity(item);
+}
+
 function normalizePackage(item) {
   const normalized = normalizeEntity(item);
   return {
@@ -855,6 +901,19 @@ function normalizePackage(item) {
           regionPrice.regionId ??
           '',
         price: Number(regionPrice.price ?? 0),
+      };
+    }),
+    districtPrices: (normalized.districtPrices ?? []).map((districtPrice) => {
+      const district = districtPrice.district;
+      return {
+        ...districtPrice,
+        districtId:
+          (typeof district === 'object' && district !== null
+            ? district._id ?? district.id
+            : district) ??
+          districtPrice.districtId ??
+          '',
+        price: Number(districtPrice.price ?? 0),
       };
     }),
   };
