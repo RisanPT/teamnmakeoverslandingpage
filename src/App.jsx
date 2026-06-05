@@ -8,6 +8,8 @@ const API_BASE_URL =
 const initialForm = {
   customerName: '',
   phone: '',
+  address: '',
+  pincode: '',
   email: '',
   districtId: '',
   regionId: '',
@@ -247,7 +249,7 @@ function App() {
       return;
     }
 
-    if (!form.customerName.trim() || !form.phone.trim() || !form.email.trim()) {
+    if (!form.customerName.trim() || !form.phone.trim() || !form.email.trim() || !form.address.trim() || !form.pincode.trim()) {
       setError('Please complete the required personal details.');
       return;
     }
@@ -268,6 +270,8 @@ function App() {
       customerName: form.customerName.trim(),
       phone: form.phone.trim(),
       email: form.email.trim(),
+      address: form.address.trim(),
+      pincode: form.pincode.trim(),
       packageId: bookingItems[0].packageId,
       regionId: form.regionId ?? '',
       districtId: selectedDistrict?.id ?? '',
@@ -394,6 +398,23 @@ function App() {
                       onChange={onFieldChange('email')}
                       placeholder="alexandra@example.com"
                       icon="mail-outline"
+                    />
+                    <Field
+                      label="Address"
+                      required
+                      className="span-2"
+                      value={form.address}
+                      onChange={onFieldChange('address')}
+                      placeholder="Enter your address"
+                      icon="home-outline"
+                    />
+                    <Field
+                      label="Pincode"
+                      required
+                      value={form.pincode}
+                      onChange={onFieldChange('pincode')}
+                      placeholder="e.g. 600001"
+                      icon="pin-outline"
                     />
                   </div>
                 </BookingSection>
@@ -923,6 +944,8 @@ function normalizeBooking(item) {
   return {
     ...item,
     id: item._id ?? item.id ?? '',
+    address: item.address ?? '',
+    pincode: item.pincode ?? '',
     bookingDate: item.bookingDate ?? item.serviceStart,
     selectedDates: item.selectedDates ?? [],
     serviceStart: item.serviceStart,
