@@ -266,39 +266,34 @@ function App() {
 
     const sortedSelectedDates = [...form.selectedDates].sort();
 
-    const payload = {
-      customerName: form.customerName.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      address: form.address.trim(),
-      pincode: form.pincode.trim(),
-      packageId: bookingItems[0].packageId,
-      regionId: form.regionId ?? '',
-      districtId: selectedDistrict?.id ?? '',
-      service: bookingItems.map((item) => item.service).join(' + '),
-      eventSlot: bookingItems
-        .map((item) => item.eventSlot.trim())
-        .filter(Boolean)
-        .join(' | '),
-      region: (typeof selectedDistrict?.region === 'object' && selectedDistrict?.region !== null)
-        ? (selectedDistrict.region.name ?? '')
-        : '',
-      district: selectedDistrict?.name ?? '',
-      selectedDates: sortedSelectedDates,
-      bookingItems,
-      status: 'pending',
-      totalPrice: totalAmount,
-      advanceAmount,
-      discountAmount: 0,
-      discountType: 'inr',
-      discountValue: 0,
-      assignedStaff: [],
-      addons: [],
-    };
-
     try {
       setSaving(true);
       setError('');
+
+      const payload = {
+        customerName: form.customerName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        address: form.address.trim(),
+        pincode: form.pincode.trim(),
+        regionId: form.regionId ?? '',
+        districtId: selectedDistrict?.id ?? '',
+        selectedDates: sortedSelectedDates,
+        bookingItems: bookingItems.map((item) => ({
+          packageId: item.packageId,
+          service: item.service,
+          eventSlot: item.eventSlot.trim(),
+          selectedDates: sortedSelectedDates,
+          totalPrice: item.totalPrice,
+          advanceAmount: item.advanceAmount,
+        })),
+        status: 'pending',
+        discountAmount: 0,
+        discountType: 'inr',
+        discountValue: 0,
+        assignedStaff: [],
+        addons: [],
+      };
 
       const createdBooking = normalizeBooking(
         await fetchJson('/bookings/public', {
